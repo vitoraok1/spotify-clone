@@ -4,16 +4,16 @@ import { PlayerContext } from '../context/PlayerContext';
 
 const Player = () => {
 
-  const { track, seekBar, seekBg, playStatus, play, pause, time, previous, next, seekSong } = useContext(PlayerContext);
+  const { seekBar, seekVolumeBar, seekVolumeBg, seekBg, playStatus, play, pause, time, previous, next, seekSong, seekVolume, muteVolume } = useContext(PlayerContext);
 
   return (
     <div className='h-[10%] bg-black flex justify-between items-center text-white px-4'>
       <div className='hidden lg:flex items-center gap-4'>
-        <img className='w-12' src={track.image} alt="" />
+        {/* <img className='w-12' src={track.image} alt="" />
         <div>
           <p>{track.name}</p>
-          <p>{track.desc.slice(0, 12)}</p>
-        </div>
+          <p className='text-[12px]'>{track.desc.slice(0, 12)}</p>
+        </div> */}
       </div>
 
       <div className='flex flex-col items-center gap-1 m-auto'>
@@ -44,9 +44,9 @@ const Player = () => {
         <img className='w-4' src={assets.mic_icon} alt="" />
         <img className='w-4' src={assets.queue_icon} alt="" />
         <img className='w-4' src={assets.speaker_icon} alt="" />
-        <img className='w-4' src={assets.volume_icon} alt="" />
-        <div className='w-20 bg-slate-50 h-1 rounded' >
-
+        <img onClick={muteVolume} className='w-4' src={assets.volume_icon} alt="" />
+        <div ref={seekVolumeBg} onClick={seekVolume} className='w-20 bg-slate-50 h-1 rounded' >
+          <hr ref={seekVolumeBar} className='h-1 border-none w-10 bg-green-800 rounded-full'/>
         </div>
         <img className='w-4' src={assets.mini_player_icon} alt="" />
         <img className='w-4' src={assets.zoom_icon} alt="" />
