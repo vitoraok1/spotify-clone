@@ -1,4 +1,4 @@
-import { createContext, use, useEffect, useRef, useState } from "react";
+import { createContext, useEffect, useRef, useState } from "react";
 // import { songsData } from "../assets/assets";
 
 export const PlayerContext = createContext();
@@ -13,7 +13,9 @@ const PlayerContextProvider = (props) => {
 
     let previousVolume = 0.5;
 
-    // const [track, setTrack] = useState(songsData[0]);
+    const [track, setTrack] = useState();
+    const [album, setAlbum] = useState();
+    const [albumTracks, setAlbumTracks] = useState([]);
     const [playStatus, setPlayStatus] = useState(false);
     const [time, setTime] = useState({
         currentTime: {
@@ -36,26 +38,85 @@ const PlayerContextProvider = (props) => {
         setPlayStatus(false);
     }
 
-    const playWithId = async (id) => {
-        // await setTrack(songsData[id]);
-        await audioRef.current.play();
-        setPlayStatus(true);
-    }
+    const saveAlbum = async (album) => {
+        if (!album) return;
+
+        const albumInfo = {
+            album: album.name,
+            artist: album.artists[0].name,
+            tracks: album.tracks.map(track => track.name)
+        };
+
+        setAlbum(albumInfo);
+
+        console.log("Álbum:", albumInfo);
+
+        try {
+            const tracksPreviewUrls = [];
+
+            for (let trackName of albumInfo.tracks) {
+                const url = `http://localhost:3000/api/search?artist=${encodeURIComponent(albumInfo.artist)}&track=${encodeURIComponent(trackName)}`;
+                const response = await fetch(url);
+                const musicData = await response.json();
+
+                if (musicData.data.length > 0) {
+                    const previewUrl = musicData.data[0].preview;
+                    tracksPreviewUrls.push(previewUrl);
+                } else {
+                    console.error(`Nenhuma música encontrada para: ${trackName}`);
+                }
+            }
+
+            if (tracksPreviewUrls.length > 0) {
+                setAlbumTracks(tracksPreviewUrls);
+            }
+
+            console.log("URLs dos previews do álbum:", tracksPreviewUrls);
+        } catch (error) {
+            console.error("Erro ao buscar músicas:", error);
+        }
+    };
+
+
+    const playWithName = async (artist, track) => {
+        try {
+            const url = `http://localhost:3000/api/search?artist=${encodeURIComponent(artist)}&track=${encodeURIComponent(track)}`;
+            const response = await fetch(url);
+            const musicData = await response.json();
+
+            console.log("Dados da música:", musicData);
+
+            if (musicData.data.length > 0) {
+                const previewUrl = musicData.data[0].preview;
+
+                setTrack(musicData.data[0]); // Atualiza o estado com os dados da track
+                audioRef.current.src = previewUrl; // Define a URL do áudio no elemento <audio>
+                await audioRef.current.play(); // Toca a música
+                setPlayStatus(true);
+            } else {
+                console.error("Nenhuma música encontrada");
+            }
+        } catch (error) {
+            console.error("Erro ao buscar música:", error);
+        }
+    };
 
     const previous = async () => {
-        if (track.id > 0) {
-            // await setTrack(songsData[track.id - 1])
-            await audioRef.current.play();
-            setPlayStatus(true);
-        }
+        // if (track.id > 0) {
+        //     // await setTrack(songsData[track.id - 1])
+        //     await audioRef.current.play();
+        //     setPlayStatus(true);
+        // }
+        console.log('previous', track.id);
     }
 
     const next = async () => {
-        if (track.id < songsData.length - 1) {
-            // await setTrack(songsData[track.id + 1])
-            await audioRef.current.play();
-            setPlayStatus(true);
-        }
+        // if (track.id < albumTracks.length - 1) {
+        //     // await setTrack(songsData[track.id + 1])
+        //     await audioRef.current.play();
+        //     setPlayStatus(true);
+        // }
+        console.log('next', albumTracks.length - 1);
     }
 
     const seekSong = (e) => {
@@ -120,15 +181,16 @@ const PlayerContextProvider = (props) => {
         audioRef,
         seekBar,
         seekBg,
-        // track,
+        track,
         // setTrack,
+        saveAlbum,
         playStatus,
         setPlayStatus,
         time,
         setTime,
         play,
         pause,
-        playWithId,
+        playWithName,
         previous,
         next,
         seekSong,

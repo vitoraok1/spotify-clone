@@ -4,17 +4,18 @@ import { PlayerContext } from '../context/PlayerContext';
 
 const Player = () => {
 
-  const { seekBar, seekVolumeBar, seekVolumeBg, seekBg, playStatus, play, pause, time, previous, next, seekSong, seekVolume, muteVolume } = useContext(PlayerContext);
+  const { track, seekBar, seekVolumeBar, seekVolumeBg, seekBg, playStatus, play, pause, time, previous, next, seekSong, seekVolume, muteVolume } = useContext(PlayerContext);
 
   return (
     <div className='h-[10%] bg-black flex justify-between items-center text-white px-4'>
-      <div className='hidden lg:flex items-center gap-4'>
-        {/* <img className='w-12' src={track.image} alt="" />
+      {track && (<div className='hidden lg:flex items-center gap-4'>
+        <img className='w-12' src={track.album.cover} alt="" />
         <div>
-          <p>{track.name}</p>
-          <p className='text-[12px]'>{track.desc.slice(0, 12)}</p>
-        </div> */}
+          <p>{track.title}</p>
+          <p className='text-[12px]'>{track.artist.name}</p>
+        </div>
       </div>
+      )}
 
       <div className='flex flex-col items-center gap-1 m-auto'>
         <div className='flex gap-4'>

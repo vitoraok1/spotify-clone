@@ -2,14 +2,12 @@ import React, { useContext } from 'react';
 import { PlayerContext } from '../context/PlayerContext';
 import { useNavigate } from 'react-router-dom';
 
-const AlbumItem = ({img, name, desc, id, album}) => {
+const ArtistItem = ({img, name, desc, id, artist}) => {
     const navigate = useNavigate();
-    const { saveAlbum } = useContext(PlayerContext);
+    // const { saveAlbum } = useContext(PlayerContext);
 
     const handleClick = () => {
-        console.log("Álbum:", album);
-        // saveAlbum(album);
-        navigate(`/album/${id}`, { state: { album } });
+        navigate(`/artist/${id}`, { state: { artist } });
     };
 
     return (
@@ -21,5 +19,5 @@ const AlbumItem = ({img, name, desc, id, album}) => {
       );
 };
 
-export default AlbumItem;
+export default ArtistItem;
 

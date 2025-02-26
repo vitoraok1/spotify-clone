@@ -1,16 +1,18 @@
-import React, {useState} from 'react'
-import { assets } from '../assets/assets'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useContext } from 'react';
+import { assets } from '../assets/assets';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { SearchContext } from '../context/SearchContext';
 
 const Navbar = () => {
-
     const navigate = useNavigate();
-    const [artists, setArtists] = useState('');
-    const [tracks, setTracks] = useState('');
+    const location = useLocation(); // Pega a rota atual
     const [query, setQuery] = useState('');
 
+    // Obtendo as funções para atualizar o estado global
+    const { setArtists, setTracks, setAlbums } = useContext(SearchContext);
+
     const handleSearch = async () => {
-        if (!query.trim()) return; // Evita requisição com input vazio
+        if (!query.trim()) return;
 
         const token = localStorage.getItem("spotify_token");
         if (!token) {
@@ -19,7 +21,8 @@ const Navbar = () => {
         }
 
         try {
-            let url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist,track&limit=10`;
+            // Faz a busca inicial para obter artistas e álbuns
+            let url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist,album&limit=10`;
 
             let response = await fetch(url, {
                 method: "GET",
@@ -31,30 +34,80 @@ const Navbar = () => {
 
             let res = await response.json();
 
+            console.log("Resposta da API Spotify:", res);
+
             if (res.error) {
                 console.error("Erro da API Spotify:", res.error);
                 return;
             }
 
-            console.log("Resposta da API Spotify:", res);
-
             setArtists(res.artists?.items || []);
-            setTracks(res.tracks?.items || []);
+            setTracks([]); // Limpa as tracks para evitar resultados anteriores
 
-            console.log("Artistas:", res.artists?.items);
-            console.log("Músicas:", res.tracks?.items);
+            // Se houver álbuns, faz uma requisição adicional para pegar as músicas
+            const albumItems = res.albums?.items || [];
+
+            // Faz uma requisição adicional para cada álbum para pegar as músicas
+            const albumsWithTracks = await Promise.all(albumItems.map(async (album) => {
+                const albumResponse = await fetch(`https://api.spotify.com/v1/albums/${album.id}`, {
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                    },
+                });
+
+                const albumData = await albumResponse.json();
+                return {
+                    ...album,
+                    tracks: albumData.tracks?.items || [], // Garante que tracks seja uma lista, mesmo que vazia
+                };
+            }));
+
+            console.log('Albums with tracks:', albumsWithTracks);
+
+            // Atualiza o estado com os álbuns e suas músicas
+            setAlbums(albumsWithTracks);
+
+            navigate('/');
 
         } catch (error) {
             console.error("Erro ao buscar músicas:", error);
         }
     };
 
-  return (
-    <>
+    const handleBack = () => {
+        // Se houver uma pesquisa ativa, limpa os resultados e reseta o estado
+        if (query.trim()) {
+            setQuery('');
+            setArtists([]);
+            setAlbums([]);
+            setTracks([]);
+        } else {
+            // Se estiver na home, o botão não faz nada
+            if (location.pathname === '/') return;
+
+            // Caso contrário, volta para a página anterior
+            navigate(-1);
+        }
+    };
+
+    // Verifica se o botão deve ser desativado:
+    const isBackDisabled = location.pathname === '/' && !query.trim();
+
+    return (
         <div className='w-full flex justify-between items-center font-semibold'>
             <div className='flex items-center gap-2'>
-                <img onClick={() => navigate(-1)}className='w-8 bg-black p-2 rounded-2xl cursor-pointer' src={assets.arrow_left} alt="" />
-                <img onClick={() => navigate(+1)} className='w-8 bg-black p-2 rounded-2xl cursor-pointer' src={assets.arrow_right} alt="" />
+                <img
+                    onClick={handleBack}
+                    className={`w-8 bg-black p-2 rounded-2xl cursor-pointer ${isBackDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    src={assets.arrow_left}
+                    alt="Voltar"
+                />
+                <img
+                    onClick={() => navigate(+1)}
+                    className='w-8 bg-black p-2 rounded-2xl cursor-pointer'
+                    src={assets.arrow_right}
+                    alt="Avançar"
+                />
             </div>
 
             <div className='flex items-center gap-4'>
@@ -64,7 +117,6 @@ const Navbar = () => {
                     <input
                         className='flex-1 bg-transparent text-white placeholder-gray-400 outline-none max-w-[90px]'
                         type="text"
-                        id="searchInput"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Search"
@@ -72,27 +124,17 @@ const Navbar = () => {
 
                     <button
                         className={`ml-auto bg-green-800 hover:bg-green-900 text-white px-3 py-1 rounded-full transition max-w-[70px] cursor-pointer ${
-                            !query.trim() && 'opacity-50 cursor-not-allowed' // Desabilita se vazio
+                            !query.trim() && 'opacity-50 cursor-not-allowed'
                         }`}
                         onClick={handleSearch}
-                        disabled={!query.trim()} // Desabilita o botão se o input estiver vazio
+                        disabled={!query.trim()}
                     >
                         <p className='justify-center font-bold'>Go</p>
                     </button>
                 </div>
-                <p className='bg-white text-black text-[15px] px-4 py-1 rounded-2xl hidden md:block cursor-pointer'>Explore Premium</p>
-                <p className='bg-black py-1 px-3 rounded-2xl text-[15px] cursor-pointer'>Install App</p>
-                <p className='bg-purple-500 text-black w-7 h-7 rounded-full flex items-center justify-center'>S</p>
             </div>
         </div>
+    );
+};
 
-        <div className='flex items-center gap-2 mt-4'>
-            <p className='bg-white text-black px-4 py-1 rounded-2xl cursor-pointer'>All</p>
-            <p className='bg-black px-4 py-1 rounded-2xl cursor-pointer'>Music</p>
-            <p className='bg-black px-4 py-1 rounded-2xl cursor-pointer'>Podcasts</p>
-        </div>
-    </>
-  )
-}
-
-export default Navbar
+export default Navbar;

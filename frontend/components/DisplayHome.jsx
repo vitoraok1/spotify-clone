@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import Navbar from "./Navbar";
 import AlbumItem from "./AlbumItem";
 import SongItem from "./SongItem";
+import ArtistItem from "./ArtistItem";
+import { SearchContext } from "../context/SearchContext";
 
 const DisplayHome = () => {
-    const [relatedArtists, setRelatedArtists] = useState([]);   // Para armazenar as músicas
-    const [albums, setAlbums] = useState([]); // Para armazenar os álbuns
+    const { artists, tracks, albums, setAlbums } = useContext(SearchContext);
+    const [recommendations, setRecommendations] = useState([]);
+    const [searchActive, setSearchActive] = useState(false); // Estado para saber se a pesquisa foi realizada
+    const [newReleases, setNewReleases] = useState([]); // Estado para armazenar os novos lançamentos
 
     const fetchNewReleases = async () => {
         const response = await fetch("http://localhost:3000/token"); // Pega o token do backend
@@ -40,11 +44,10 @@ const DisplayHome = () => {
         }));
 
         console.log('albumsWithTracks', albumsWithTracks); // Verifique a estrutura dos álbuns
-
-        setAlbums(albumsWithTracks); // Atualiza os álbuns com as faixas
+        setNewReleases(albumsWithTracks); // Atualiza os lançamentos recentes
     };
 
-    const fetchRelatedArtists = async () => {
+    const fetchRecommendations = async () => {
         const response = await fetch("http://localhost:3000/token"); // Pega o token do backend
         const data = await response.json();
         const token = data.access_token;
@@ -64,58 +67,107 @@ const DisplayHome = () => {
 
         console.log('relatedArtistsData', relatedArtistsData.tracks.items);
 
-        setRelatedArtists(relatedArtistsData.tracks.items); // Atualiza os artistas relacionados
+        setRecommendations(relatedArtistsData.tracks.items); // Atualiza os artistas relacionados
     };
 
-
-    // Chamando a função quando o componente monta
     useEffect(() => {
-        fetchNewReleases(); // Faz a requisição assim que o componente for montado
-        fetchRelatedArtists(); // Faz a requisição assim que o componente for montado
+        fetchRecommendations(); // Faz a requisição de recomendações assim que o componente for montado
     }, []);
+
+    useEffect(() => {
+        if (!searchActive) { // Só chama a função para buscar os novos lançamentos se não houver pesquisa ativa
+            fetchNewReleases();
+        }
+    }, [searchActive]); // A requisição para novos lançamentos só acontece quando a pesquisa não está ativa
+
+    useEffect(() => {
+        // Sempre que uma pesquisa for realizada, a variável searchActive é setada como true
+        if (artists.length > 0 || tracks.length > 0) {
+            setSearchActive(true);
+        } else {
+            setSearchActive(false);
+        }
+    }, [artists, tracks]);
 
     return (
         <>
             <Navbar />
+            {artists.length === 0 && tracks.length === 0 ? (
+                <>
+                    <div className="mb-4">
+                        <h1 className="my-5 ml-2 font-bold text-2xl">New Releases</h1>
+                        <div className="flex no-scrollbar overflow-auto">
+                            {newReleases.length > 0 ? (
+                                newReleases.map((item) => (
+                                    <AlbumItem
+                                        key={item.id}
+                                        img={item.images?.[0]?.url || null}
+                                        name={item.artists[0]?.name || null}
+                                        desc={item.name}
+                                        id={item.id}
+                                        album={item}
+                                    />
+                                ))
+                            ) : (
+                                <p>Carregando álbuns...</p>
+                            )}
+                        </div>
+                    </div>
 
-            <div className="mb-4">
-                <h1 className="my-5 ml-2 font-bold text-2xl">New Releases</h1>
-                <div className="flex no-scrollbar overflow-auto">
-                    {albums.length > 0 ? (
-                        albums.map((item) => (
-                            <AlbumItem
-                                key={item.id}
-                                img={item.images?.[0]?.url || ""}
-                                name={item.artists[0]?.name || ""} // Imagem do álbum
-                                desc={item.name}                   // Nome do álbum
-                                id={item.id}                      // ID do álbum
-                                album={item}                      // Dados do álbum
-                            />
-                        ))
-                    ) : (
-                        <p>Carregando álbuns...</p>
-                    )}
-                </div>
-            </div>
+                    <div className="mb-4">
+                        <h1 className="my-5 ml-2 font-bold text-2xl">Recommendations</h1>
+                        <div className="flex no-scrollbar overflow-auto">
+                            {recommendations.length > 0 ? (
+                                recommendations.map((track) => (
+                                    <SongItem
+                                        key={track.id}
+                                        img={track.album.images?.[0]?.url || null}
+                                        name={track.name}
+                                        desc={track.artists[0]?.name || null}
+                                        id={track.id}
+                                    />
+                                ))
+                            ) : (
+                                <p>Carregando recomendações...</p>
+                            )}
+                        </div>
+                    </div>
+                </>
+            ) : (
+                <>
+                    <div className="mb-4">
+                        <h1 className="my-5 font-bold ml-2 text-2xl">Artists Found</h1>
+                        <div className="flex no-scrollbar overflow-auto">
+                            {artists.map((artist) => (
+                                <ArtistItem
+                                    key={artist.id}
+                                    img={artist.images?.[0]?.url || null}
+                                    name={artist.name}
+                                    desc={artist.genres?.join(", ") || ""}
+                                    id={artist.id}
+                                    artist={artist}
+                                />
+                            ))}
+                        </div>
+                    </div>
 
-            <div className="mb-4">
-                <h1 className="my-5 font-bold ml-2 text-2xl">Recommendations for you</h1>
-                <div className="flex no-scrollbar overflow-auto">
-                    {relatedArtists.length > 0 ? (
-                        relatedArtists.map((item) => (
-                            <SongItem
-                                key={item.id}
-                                img={item.album.images?.[0]?.url || ""}
-                                name={item.name}
-                                desc={item.artists[0]?.name || ""}
-                                id={item.id}
-                            />
-                        ))
-                    ) : (
-                        <p>Carregando músicas...</p>
-                    )}
-                </div>
-            </div>
+                    <div className="mb-4">
+                        <h1 className="my-5 font-bold ml-2 text-2xl">Albums Found</h1>
+                        <div className="flex no-scrollbar overflow-auto">
+                            {albums.map((item) => (
+                                <AlbumItem
+                                    key={item.id}
+                                    img={item.images?.[0]?.url || null}
+                                    name={item.name}
+                                    desc={item.artists[0]?.name || ""}
+                                    id={item.id}
+                                    album={item}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </>
+            )}
         </>
     );
 };
