@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 
 const ArtistItem = ({img, name, desc, id, artist}) => {
     const navigate = useNavigate();
-    // const { saveAlbum } = useContext(PlayerContext);
 
     const handleClick = () => {
         navigate(`/artist/${id}`, { state: { artist } });

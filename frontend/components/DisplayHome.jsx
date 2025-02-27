@@ -17,7 +17,7 @@ const DisplayHome = () => {
         const token = data.access_token;
 
         // Requisição para o endpoint de new releases (últimos lançamentos)
-        const releasesResponse = await fetch("https://api.spotify.com/v1/browse/new-releases", {
+        const releasesResponse = await fetch("https://api.spotify.com/v1/browse/new-releases?", {
             headers: {
                 "Authorization": `Bearer ${token}`,
             },
@@ -52,8 +52,7 @@ const DisplayHome = () => {
         const data = await response.json();
         const token = data.access_token;
 
-        // ID do artista "Bring Me The Horizon"
-        const artistName = "bring";
+        const artistName = "Bring me the horizon";
 
         // Requisição para buscar artistas relacionados
         const relatedArtistsResponse = await fetch(`https://api.spotify.com/v1/search?q=${artistName}&type=artist,track&limit=10`, {
@@ -98,16 +97,18 @@ const DisplayHome = () => {
                         <h1 className="my-5 ml-2 font-bold text-2xl">New Releases</h1>
                         <div className="flex no-scrollbar overflow-auto">
                             {newReleases.length > 0 ? (
-                                newReleases.map((item) => (
-                                    <AlbumItem
-                                        key={item.id}
-                                        img={item.images?.[0]?.url || null}
-                                        name={item.artists[0]?.name || null}
-                                        desc={item.name}
-                                        id={item.id}
-                                        album={item}
-                                    />
-                                ))
+                                [...newReleases]
+                                    .reverse()
+                                    .map((item) => (
+                                        <AlbumItem
+                                            key={item.id}
+                                            img={item.images?.[0]?.url || null}
+                                            name={item.artists[0]?.name || null}
+                                            desc={item.name}
+                                            id={item.id}
+                                            album={item}
+                                        />
+                                    ))
                             ) : (
                                 <p>Carregando álbuns...</p>
                             )}

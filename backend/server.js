@@ -46,5 +46,21 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
+app.get('/api/searchAlbum', async (req, res) => {
+    const { artist, album } = req.query;
+
+    if (!artist || !album) {
+        return res.status(400).json({ error: "Parâmetros 'album e artist' são obrigatório." });
+    }
+
+    try {
+        const response = await fetch(`https://api.deezer.com/search?q=artist:"${encodeURIComponent(artist)}" album:"${encodeURIComponent(album)}"`);
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: "Erro ao buscar album" });
+    }
+});
+
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));

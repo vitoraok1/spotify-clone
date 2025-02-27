@@ -1,15 +1,14 @@
 import React, { useContext } from 'react';
-import { PlayerContext } from '../context/PlayerContext';
 import { useNavigate } from 'react-router-dom';
+import { SearchContext } from '../context/SearchContext';
 
 const AlbumItem = ({img, name, desc, id, album}) => {
     const navigate = useNavigate();
-    const { saveAlbum } = useContext(PlayerContext);
+    const { searchAlbum } = useContext(SearchContext);
 
-    const handleClick = () => {
-        console.log("Álbum:", album);
-        // saveAlbum(album);
-        navigate(`/album/${id}`, { state: { album } });
+    const handleClick = async () => {
+        const albumSongs = await searchAlbum(name, desc);
+        navigate(`/album/${id}`, { state: { album, albumSongs } });
     };
 
     return (

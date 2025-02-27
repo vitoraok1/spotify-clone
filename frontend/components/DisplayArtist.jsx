@@ -1,14 +1,16 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './Navbar';
 import { PlayerContext } from '../context/PlayerContext';
+import { SearchContext } from '../context/SearchContext';
 import { assets } from '../assets/assets';
 
 const DisplayArtist = () => {
-    const { id } = useParams();
     const location = useLocation();
+    const navigate = useNavigate();
     const artistData = location.state?.artist;
-    const { playWithName } = useContext(PlayerContext);
+    const { playWithName, setSelectedTrack, selectedTrack } = useContext(PlayerContext);
+    const { searchAlbum } = useContext(SearchContext);
     const [artistTracks, setArtistTracks] = useState([]);
     const [artistAlbums, setArtistAlbums] = useState([]);
     const [visibleTracks, setVisibleTracks] = useState(5);
@@ -16,7 +18,6 @@ const DisplayArtist = () => {
     const [visibleAlbums, setVisibleAlbums] = useState(4); // Inicialmente mostra 5
     const [showAllAlbums, setShowAllAlbums] = useState(false);
     const [hoveredTrack, setHoveredTrack] = useState(null);
-    const [selectedTrack, setSelectedTrack] = useState(null); // Estado para armazenar a faixa selecionada
     const [selectedType, setSelectedType] = useState('album'); // Estado para armazenar o tipo de álbum selecionado
 
     if (!artistData) {
@@ -25,54 +26,90 @@ const DisplayArtist = () => {
 
     console.log("Dados do artista:", artistData);
 
-    const fetchArtistTopTracks = async () => {
-        const response = await fetch("http://localhost:3000/token");
-        const data = await response.json();
-        const token = data.access_token;
-
-        const artistId = artistData.id;
-
-        const artistResponse = await fetch(`https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=US`, {
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json",
-            },
-        });
-
-        const artistInfo = await artistResponse.json();
-        console.log('artistInfo', artistInfo);
-
-        setArtistTracks(artistInfo.tracks);
+    const handleTrackClick = (track) => {
+        playWithName(track.artists[0].name, track.name);
+        setSelectedTrack(track.id); // Atualiza o estado de seleção para a faixa clicada
     };
 
-    const fetchArtistAlbums = async () => {
-        const response = await fetch("http://localhost:3000/token");
-        const data = await response.json();
-        const token = data.access_token;
+    const handleAlbumClick = async (album) => {
 
-        const artistId = artistData.id;
-
-        const artistAlbumsResponse = await fetch(`https://api.spotify.com/v1/artists/${artistId}/albums?market=US`, {
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json",
-            },
-        });
-
-        const artistAlbumsInfo = await artistAlbumsResponse.json();
-        console.log('artistAlbumsInfo', artistAlbumsInfo);
-
-        setArtistAlbums(artistAlbumsInfo.items);
+        try {
+            console.log("Álbum clicado:", album);
+            const albumData = await fetchAlbumData(album.id);
+            const albumSongs = await searchAlbum(album.artists[0].name, album.name);
+            navigate(`/album/${album.id}`, { state: { albumData, albumSongs } });
+        } catch (error) {
+            console.error("Erro ao buscar dados do álbum:", error);
+        }
     };
+
+    const fetchArtistData = async () => {
+        try {
+            const response = await fetch("http://localhost:3000/token");
+            const data = await response.json();
+            const token = data.access_token;
+            const artistId = artistData.id;
+
+            const [tracksResponse, albumsResponse] = await Promise.all([
+                fetch(`https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=US`, {
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }),
+                fetch(`https://api.spotify.com/v1/artists/${artistId}/albums?market=US`, {
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                })
+            ]);
+
+            const [tracksData, albumsData] = await Promise.all([
+                tracksResponse.json(),
+                albumsResponse.json()
+            ]);
+
+            console.log('artistInfo', tracksData);
+            console.log('artistAlbumsInfo', albumsData);
+
+            setArtistTracks(tracksData.tracks);
+            setArtistAlbums(albumsData.items);
+        } catch (error) {
+            console.error("Erro ao buscar dados do artista:", error);
+        }
+    };
+
+    const fetchAlbumData = async (albumId) => {
+
+        try {
+            const response = await fetch("http://localhost:3000/token");
+            const data = await response.json();
+            const token = data.access_token;
+
+            const albumResponse = await fetch(`https://api.spotify.com/v1/albums/${albumId}`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                },
+            });
+
+            const albumData = await albumResponse.json();
+
+            return {
+                ...albumData,
+                tracks: albumData.tracks?.items || [], // Garante que tracks seja uma lista, mesmo que vazia
+            };
+        } catch (error) {
+            console.error("Erro ao buscar dados do álbum:", error);
+        }
+    }
 
     useEffect(() => {
-        fetchArtistTopTracks();
-        fetchArtistAlbums();
+        fetchArtistData();
 
         const handleResize = () => {
             const screenWidth = window.innerWidth;
 
-            // Defina a quantidade de cards conforme a largura da tela
             if (screenWidth >= 1600) {
                 setVisibleAlbums(10);
             } else if (screenWidth >= 1200) {
@@ -82,13 +119,11 @@ const DisplayArtist = () => {
             } else if (screenWidth >= 768) {
                 setVisibleAlbums(5);
             } else {
-                setVisibleAlbums(4); // Padrão inicial para telas menores
+                setVisibleAlbums(4);
             }
         };
 
-
         window.addEventListener('resize', handleResize);
-
         handleResize();
 
         return () => {
@@ -107,6 +142,12 @@ const DisplayArtist = () => {
         setShowAllAlbums(!showAllAlbums);
         setVisibleAlbums(showAllAlbums ? 5 : artistAlbums.length);
     };
+
+    const filteredAlbums = artistAlbums
+        .filter(album => album.album_type === selectedType)
+        .slice(0, visibleAlbums);
+
+    console.log("filteredAlbums type", filteredAlbums.map(album => album.type));
 
     return (
         <>
@@ -129,7 +170,7 @@ const DisplayArtist = () => {
                         <div
                             onMouseEnter={() => setHoveredTrack(index)}
                             onMouseLeave={() => setHoveredTrack(null)}
-                            onClick={() => console.log(track)} // Chamando a função para tratar o clique
+                            onClick={() => handleTrackClick(track)} // Chamando a função para tratar o clique
                             key={track.id}
                             className={`grid grid-cols-2 gap-2 pb-2 pt-2 text-[#a7a7a7] cursor-pointer rounded-sm items-center
                                 ${hoveredTrack === index ? 'bg-[#ffffff2b]' : ''}
@@ -171,14 +212,14 @@ const DisplayArtist = () => {
                     <div className="flex gap-4 mb-6">
                         <button
                             className={`px-4 py-2 rounded-full text-sm transition-colors
-                                ${selectedType === 'album' ? 'bg-white text-black' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                                ${selectedType === 'album' ? 'bg-white text-black' : 'bg-[#ffffff2b] text-gray-300 hover:bg-[#ffffff38]'}`}
                             onClick={() => setSelectedType('album')}
                         >
                             Albums
                         </button>
                         <button
                             className={`px-4 py-2 rounded-full text-sm transition-colors
-                                ${selectedType === 'single' ? 'bg-white text-black' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                                ${selectedType === 'single' ? 'bg-white text-black' : 'bg-[#ffffff2b] text-gray-300 hover:bg-[#ffffff38]'}`}
                             onClick={() => setSelectedType('single')}
                         >
                             Singles and EPs
@@ -191,11 +232,10 @@ const DisplayArtist = () => {
                             gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))"
                         }}
                     >
-                        {artistAlbums
-                            .filter(album => album.type === selectedType)
-                            .slice(0, visibleAlbums)
-                            .map((album, index) => (
+                        {filteredAlbums.length > 0 ? (
+                            filteredAlbums.map((album, index) => (
                                 <div
+                                    onClick={() => handleAlbumClick(album)}
                                     key={index}
                                     className="p-2 rounded-lg cursor-pointer transition-colors hover:bg-[#ffffff2b] items-center"
                                 >
@@ -210,7 +250,9 @@ const DisplayArtist = () => {
                                     </p>
                                 </div>
                             ))
-                        }
+                        ) : (
+                            <p>Carregando álbuns...</p>
+                        )}
                     </div>
                     <div className="mt-4">
                         <button onClick={toggleShowAllAlbums} className="text-gray-400 hover:font-bold text-sm">

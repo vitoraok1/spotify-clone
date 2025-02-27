@@ -111,8 +111,7 @@ const Navbar = () => {
             </div>
 
             <div className='flex items-center gap-4'>
-                <div className='flex items-center gap-3 pl-8 pr-4 py-2 bg-[#242424] rounded-full'>
-                    <img className='w-6' src={assets.search_icon} alt="Search Icon" />
+                <div className='flex items-center w-2xs gap-3 pl-8 pr-4 py-2 bg-[#242424] rounded-full'>
 
                     <input
                         className='flex-1 bg-transparent text-white placeholder-gray-400 outline-none max-w-[90px]'
@@ -129,7 +128,7 @@ const Navbar = () => {
                         onClick={handleSearch}
                         disabled={!query.trim()}
                     >
-                        <p className='justify-center font-bold'>Go</p>
+                        <img className='w-4' src={assets.search_icon} alt="Search Icon" />
                     </button>
                 </div>
             </div>

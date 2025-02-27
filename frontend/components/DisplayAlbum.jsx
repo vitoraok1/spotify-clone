@@ -1,32 +1,44 @@
-import React, { useContext, useState } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import React, { useContext, useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import { assets } from '../assets/assets';
 import { PlayerContext } from '../context/PlayerContext';
 
 const DisplayAlbum = () => {
-    const { id } = useParams(); // Obtém o ID do álbum da URL
-    const location = useLocation(); // Acessa o estado da navegação
+    const location = useLocation();
     const [hoveredTrack, setHoveredTrack] = useState(null);
-    const [selectedTrack, setSelectedTrack] = useState(null); // Estado para armazenar a faixa selecionada
-    const albumData = location.state?.album; // Obtém os dados do álbum passados na navegação
-    const { playWithName } = useContext(PlayerContext);
+    const albumData = location.state?.albumData || location.state?.album;
+    const albumSongs = location.state?.albumSongs;
+    const { playWithName, setSelectedTrack, selectedTrack, setPreviewUrls, track } = useContext(PlayerContext);
 
-    if (!albumData) {
-        return <p>Carregando...</p>; // Exibe uma mensagem de carregamento se os dados não estiverem disponíveis
+    if (!albumData || !albumSongs) {
+        return <p>Loading...</p>;
     }
 
-    console.log("Dados do álbum:", albumData);
-
-    // Verifica se há faixas no álbum
-    const tracks = albumData.tracks || [];
+    const tracks = albumSongs.data || [];
+    const previewUrls = useMemo(() => tracks.map(track => track), [tracks]);
 
     console.log("Álbum tracks:", tracks);
 
     const handleTrackClick = (track) => {
-        playWithName(track.artists[0].name, track.name);
-        setSelectedTrack(track.id); // Atualiza o estado de seleção para a faixa clicada
+        playWithName(track.artist.name, track.title);
+        setSelectedTrack(track.id);
     };
+
+    // Sincroniza o selectedTrack com o track atual do contexto
+    useEffect(() => {
+        if (track) {
+            setSelectedTrack(track.id);
+        }
+    }, [track, setSelectedTrack]);
+
+    // Atualiza as URLs de preview
+    useEffect(() => {
+        if (previewUrls.length > 0) {
+            console.log("previewUrls >>>>>>>>>>>", previewUrls);
+            setPreviewUrls(previewUrls);
+        }
+    }, [previewUrls, setPreviewUrls]);
 
     return (
         <>
@@ -39,7 +51,7 @@ const DisplayAlbum = () => {
                     <p className='mt-1'>
                         <b>{albumData.artists?.[0]?.name}</b>
                         {` • ${tracks.length} songs, `}
-                        {Math.floor(tracks.reduce((acc, track) => acc + (track.duration_ms || 0), 0) / 60000)} min
+                        {Math.floor(tracks.reduce((acc, track) => acc + (track.duration || 0), 0) / 60)} min
                     </p>
                 </div>
             </div>
@@ -53,13 +65,12 @@ const DisplayAlbum = () => {
                 <div
                     onMouseEnter={() => setHoveredTrack(index)}
                     onMouseLeave={() => setHoveredTrack(null)}
-                    onClick={() => handleTrackClick(track)} // Chamando a função para tratar o clique
+                    onClick={() => handleTrackClick(track)}
                     key={track.id}
                     className={`grid grid-cols-2 gap-2 p-2 text-[#a7a7a7] cursor-pointer rounded-sm
                         ${hoveredTrack === index ? 'bg-[#ffffff2b]' : ''}
-                        ${selectedTrack === track.id ? 'bg-[#ffffff2b]' : ''}`} // Aplica a cor de fundo para o clique
+                        ${selectedTrack === track.id ? 'bg-[#ffffff2b]' : ''}`}
                 >
-                    {/* Número da faixa e informações da música */}
                     <div className='flex items-center mt-2'>
                         <span className='text-[#a7a7a7] w-8 text-right mr-6'>
                             {hoveredTrack === index || selectedTrack === track.id ? (
@@ -69,13 +80,12 @@ const DisplayAlbum = () => {
                             )}
                         </span>
                         <div className='text-white flex flex-col text-sm'>
-                            <span>{track.name}</span>
-                            <span className='text-[#a7a7a7]'>{track.artists[0]?.name}</span>
+                            <span>{track.title}</span>
+                            <span className='text-[#a7a7a7]'>{track.artist?.name}</span>
                         </div>
                     </div>
-                    {/* Duração */}
                     <p className='text-sm text-right mt-3 mr-6'>
-                        {Math.floor((track.duration_ms || 0) / 60000)}:{(((track.duration_ms || 0) % 60000) / 1000).toFixed(0).padStart(2, '0')}
+                        {Math.floor((track.duration || 0) / 60)}:{((track.duration || 0) % 60).toFixed(0).padStart(2, '0')}
                     </p>
                 </div>
             ))}

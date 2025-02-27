@@ -1,10 +1,8 @@
 import { createContext, useEffect, useRef, useState } from "react";
-// import { songsData } from "../assets/assets";
 
 export const PlayerContext = createContext();
 
 const PlayerContextProvider = (props) => {
-
     const audioRef = useRef();
     const seekBg = useRef();
     const seekBar = useRef();
@@ -14,69 +12,27 @@ const PlayerContextProvider = (props) => {
     let previousVolume = 0.5;
 
     const [track, setTrack] = useState();
+    const [selectedTrack, setSelectedTrack] = useState(null);
     const [album, setAlbum] = useState();
     const [albumTracks, setAlbumTracks] = useState([]);
+    const [previewUrls, setPreviewUrls] = useState([]);
     const [playStatus, setPlayStatus] = useState(false);
     const [time, setTime] = useState({
-        currentTime: {
-            seconds: '00',
-            minutes: 0,
-        },
-        totalTime: {
-            seconds: '00',
-            minutes: 0,
-        }
+        currentTime: { seconds: '00', minutes: 0 },
+        totalTime: { seconds: '00', minutes: 0 },
     });
+
+    const [currentTrackIndex, setCurrentTrackIndex] = useState(0); // Estado para armazenar o índice da faixa atual
 
     const play = () => {
         audioRef.current.play();
         setPlayStatus(true);
-    }
+    };
 
     const pause = () => {
         audioRef.current.pause();
         setPlayStatus(false);
-    }
-
-    const saveAlbum = async (album) => {
-        if (!album) return;
-
-        const albumInfo = {
-            album: album.name,
-            artist: album.artists[0].name,
-            tracks: album.tracks.map(track => track.name)
-        };
-
-        setAlbum(albumInfo);
-
-        console.log("Álbum:", albumInfo);
-
-        try {
-            const tracksPreviewUrls = [];
-
-            for (let trackName of albumInfo.tracks) {
-                const url = `http://localhost:3000/api/search?artist=${encodeURIComponent(albumInfo.artist)}&track=${encodeURIComponent(trackName)}`;
-                const response = await fetch(url);
-                const musicData = await response.json();
-
-                if (musicData.data.length > 0) {
-                    const previewUrl = musicData.data[0].preview;
-                    tracksPreviewUrls.push(previewUrl);
-                } else {
-                    console.error(`Nenhuma música encontrada para: ${trackName}`);
-                }
-            }
-
-            if (tracksPreviewUrls.length > 0) {
-                setAlbumTracks(tracksPreviewUrls);
-            }
-
-            console.log("URLs dos previews do álbum:", tracksPreviewUrls);
-        } catch (error) {
-            console.error("Erro ao buscar músicas:", error);
-        }
     };
-
 
     const playWithName = async (artist, track) => {
         try {
@@ -84,14 +40,13 @@ const PlayerContextProvider = (props) => {
             const response = await fetch(url);
             const musicData = await response.json();
 
-            console.log("Dados da música:", musicData);
-
             if (musicData.data.length > 0) {
                 const previewUrl = musicData.data[0].preview;
 
-                setTrack(musicData.data[0]); // Atualiza o estado com os dados da track
-                audioRef.current.src = previewUrl; // Define a URL do áudio no elemento <audio>
-                await audioRef.current.play(); // Toca a música
+                console.log("Música encontrada:", musicData.data[0]);
+                setTrack(musicData.data[0]);
+                audioRef.current.src = previewUrl;
+                await audioRef.current.play();
                 setPlayStatus(true);
             } else {
                 console.error("Nenhuma música encontrada");
@@ -101,23 +56,33 @@ const PlayerContextProvider = (props) => {
         }
     };
 
+    // Função para ir para a faixa anterior
     const previous = async () => {
-        // if (track.id > 0) {
-        //     // await setTrack(songsData[track.id - 1])
-        //     await audioRef.current.play();
-        //     setPlayStatus(true);
-        // }
-        console.log('previous', track.id);
-    }
+        if (previewUrls.length > 0) {
+            const previousIndex = currentTrackIndex > 0 ? currentTrackIndex - 1 : previewUrls.length - 1;
+            setCurrentTrackIndex(previousIndex);
+            audioRef.current.src = previewUrls[previousIndex].preview;
+            await audioRef.current.play();
+            setPlayStatus(true);
+            setTrack(previewUrls[previousIndex]);
+        } else {
+            console.error("O álbum ainda não foi carregado ou não há faixas disponíveis.");
+        }
+    };
 
+    // Função para ir para a próxima faixa
     const next = async () => {
-        // if (track.id < albumTracks.length - 1) {
-        //     // await setTrack(songsData[track.id + 1])
-        //     await audioRef.current.play();
-        //     setPlayStatus(true);
-        // }
-        console.log('next', albumTracks.length - 1);
-    }
+        if (previewUrls.length > 0) {
+            const nextIndex = currentTrackIndex < previewUrls.length - 1 ? currentTrackIndex + 1 : 0;
+            setCurrentTrackIndex(nextIndex);
+            audioRef.current.src = previewUrls[nextIndex].preview;
+            await audioRef.current.play();
+            setPlayStatus(true);
+            setTrack(previewUrls[nextIndex]);
+        } else {
+            console.error("O álbum ainda não foi carregado ou não há faixas disponíveis.");
+        }
+    };
 
     const seekSong = (e) => {
         const seekWidth = seekBg.current.clientWidth;
@@ -125,17 +90,15 @@ const PlayerContextProvider = (props) => {
         const seekPercentage = seekPosition / seekWidth;
         const seekTime = seekPercentage * audioRef.current.duration;
         audioRef.current.currentTime = seekTime;
-    }
+    };
 
     const muteVolume = () => {
         const currentVolume = audioRef.current.volume;
 
         if (currentVolume === 0) {
-
             audioRef.current.volume = previousVolume || 0.5;
             seekVolumeBar.current.style.width = `${(previousVolume || 0.5) * 100}%`;
         } else {
-
             previousVolume = currentVolume;
             audioRef.current.volume = 0;
             seekVolumeBar.current.style.width = '0%';
@@ -159,31 +122,33 @@ const PlayerContextProvider = (props) => {
         audioRef.current.ontimeupdate = () => {
             const currentSeconds = Math.floor(audioRef.current.currentTime % 60);
             const currentMinutes = Math.floor(audioRef.current.currentTime / 60);
-            const totalSeconds = Math.floor(audioRef.current.duration % 60) || 0; // Evita NaN
-            const totalMinutes = Math.floor(audioRef.current.duration / 60) || 0; // Evita NaN
+            const totalSeconds = Math.floor(audioRef.current.duration % 60) || 0;
+            const totalMinutes = Math.floor(audioRef.current.duration / 60) || 0;
 
             seekBar.current.style.width = (Math.floor(audioRef.current.currentTime / audioRef.current.duration * 100) || 0) + '%';
 
             setTime({
-                currentTime: {
-                    seconds: String(currentSeconds).padStart(2, '0'),
-                    minutes: currentMinutes,
-                },
-                totalTime: {
-                    seconds: String(totalSeconds).padStart(2, '0'),
-                    minutes: totalMinutes,
-                }
+                currentTime: { seconds: String(currentSeconds).padStart(2, '0'), minutes: currentMinutes },
+                totalTime: { seconds: String(totalSeconds).padStart(2, '0'), minutes: totalMinutes },
             });
         };
     }, [audioRef]);
+
+    useEffect(() => {
+        if (albumTracks.length > 0) {
+            setPreviewUrls(albumTracks.map(track => track.preview));
+        }
+    }, [albumTracks]);
 
     const contextValue = {
         audioRef,
         seekBar,
         seekBg,
         track,
-        // setTrack,
-        saveAlbum,
+        previewUrls,
+        setPreviewUrls,
+        setSelectedTrack,
+        selectedTrack,
         playStatus,
         setPlayStatus,
         time,
@@ -198,7 +163,7 @@ const PlayerContextProvider = (props) => {
         seekVolumeBar,
         seekVolumeBg,
         muteVolume,
-    }
+    };
 
     return (
         <PlayerContext.Provider value={contextValue}>
