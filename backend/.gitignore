@@ -1,0 +1,6 @@
+# Ignorar o arquivo .env
+.env
+
+# Ignorar arquivos de log ou temporários
+*.log
+*.tmp
