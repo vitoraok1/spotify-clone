@@ -13,8 +13,6 @@ export const SearchProvider = ({ children }) => {
             const response = await fetch(url);
             const albumData = await response.json();
 
-            console.log("Dados do álbum2 >>>>>>>>>>>>>>>>>:", albumData);
-
             return albumData;
 
         } catch (error) {

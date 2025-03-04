@@ -18,7 +18,7 @@ const DisplayAlbum = () => {
     const tracks = albumSongs.data || [];
     const previewUrls = useMemo(() => tracks.map(track => track), [tracks]);
 
-    console.log("Álbum tracks:", tracks);
+    ("Álbum tracks:", tracks);
 
     const handleTrackClick = (track) => {
         playWithName(track.artist.name, track.title);
@@ -35,7 +35,7 @@ const DisplayAlbum = () => {
     // Atualiza as URLs de preview
     useEffect(() => {
         if (previewUrls.length > 0) {
-            console.log("previewUrls >>>>>>>>>>>", previewUrls);
+            ("previewUrls >>>>>>>>>>>", previewUrls);
             setPreviewUrls(previewUrls);
         }
     }, [previewUrls, setPreviewUrls]);

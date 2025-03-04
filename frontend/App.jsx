@@ -16,7 +16,7 @@ const App = () => {
           const storedToken = localStorage.getItem("spotify_token");
           const tokenExpiration = localStorage.getItem("spotify_token_expiration");
 
-          console.log(storedToken);
+          (storedToken);
 
           if (storedToken && tokenExpiration > Date.now()) {
               setToken(storedToken);
