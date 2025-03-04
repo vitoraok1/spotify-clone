@@ -43,7 +43,6 @@ const DisplayHome = () => {
             };
         }));
 
-        console.log('albumsWithTracks', albumsWithTracks); // Verifique a estrutura dos álbuns
         setNewReleases(albumsWithTracks); // Atualiza os lançamentos recentes
     };
 
@@ -63,8 +62,6 @@ const DisplayHome = () => {
         });
 
         const relatedArtistsData = await relatedArtistsResponse.json();
-
-        console.log('relatedArtistsData', relatedArtistsData.tracks.items);
 
         setRecommendations(relatedArtistsData.tracks.items); // Atualiza os artistas relacionados
     };

@@ -43,7 +43,6 @@ const PlayerContextProvider = (props) => {
             if (musicData.data.length > 0) {
                 const previewUrl = musicData.data[0].preview;
 
-                console.log("Música encontrada:", musicData.data[0]);
                 setTrack(musicData.data[0]);
                 audioRef.current.src = previewUrl;
                 await audioRef.current.play();

@@ -24,8 +24,6 @@ const DisplayArtist = () => {
         return <p>Carregando...</p>;
     }
 
-    console.log("Dados do artista:", artistData);
-
     const handleTrackClick = (track) => {
         playWithName(track.artists[0].name, track.name);
         setSelectedTrack(track.id); // Atualiza o estado de seleção para a faixa clicada
@@ -34,7 +32,6 @@ const DisplayArtist = () => {
     const handleAlbumClick = async (album) => {
 
         try {
-            console.log("Álbum clicado:", album);
             const albumData = await fetchAlbumData(album.id);
             const albumSongs = await searchAlbum(album.artists[0].name, album.name);
             navigate(`/album/${album.id}`, { state: { albumData, albumSongs } });
@@ -69,9 +66,6 @@ const DisplayArtist = () => {
                 tracksResponse.json(),
                 albumsResponse.json()
             ]);
-
-            console.log('artistInfo', tracksData);
-            console.log('artistAlbumsInfo', albumsData);
 
             setArtistTracks(tracksData.tracks);
             setArtistAlbums(albumsData.items);
@@ -146,8 +140,6 @@ const DisplayArtist = () => {
     const filteredAlbums = artistAlbums
         .filter(album => album.album_type === selectedType)
         .slice(0, visibleAlbums);
-
-    console.log("filteredAlbums type", filteredAlbums.map(album => album.type));
 
     return (
         <>

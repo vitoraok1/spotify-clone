@@ -34,8 +34,6 @@ const Navbar = () => {
 
             let res = await response.json();
 
-            console.log("Resposta da API Spotify:", res);
-
             if (res.error) {
                 console.error("Erro da API Spotify:", res.error);
                 return;
@@ -61,8 +59,6 @@ const Navbar = () => {
                     tracks: albumData.tracks?.items || [], // Garante que tracks seja uma lista, mesmo que vazia
                 };
             }));
-
-            console.log('Albums with tracks:', albumsWithTracks);
 
             // Atualiza o estado com os álbuns e suas músicas
             setAlbums(albumsWithTracks);
