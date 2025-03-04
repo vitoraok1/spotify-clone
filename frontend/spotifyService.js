@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000/token"; // Backend Express
+const API_URL = "https://spotify-clone-zwjk.onrender.com/token"; // Backend Express
 
 export async function getSpotifyToken() {
     const response = await fetch(API_URL);
