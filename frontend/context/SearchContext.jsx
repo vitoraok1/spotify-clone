@@ -1,4 +1,5 @@
 import React, { createContext, useState } from 'react';
+import config from '../../config';
 
 export const SearchContext = createContext();
 
@@ -9,7 +10,7 @@ export const SearchProvider = ({ children }) => {
 
     const searchAlbum = async (artist, album) => {
         try {
-            const url = `http://localhost:3000/api/searchAlbum?artist=${encodeURIComponent(artist)}&album=${encodeURIComponent(album)}`;
+            const url = `${config.apiUrl}/api/searchAlbum?artist=${encodeURIComponent(artist)}&album=${encodeURIComponent(album)}`;
             const response = await fetch(url);
             const albumData = await response.json();
 

@@ -4,6 +4,7 @@ import AlbumItem from "./AlbumItem";
 import SongItem from "./SongItem";
 import ArtistItem from "./ArtistItem";
 import { SearchContext } from "../context/SearchContext";
+import config from "../../config";
 
 const DisplayHome = () => {
     const { artists, tracks, albums, setAlbums } = useContext(SearchContext);
@@ -12,7 +13,7 @@ const DisplayHome = () => {
     const [newReleases, setNewReleases] = useState([]); // Estado para armazenar os novos lançamentos
 
     const fetchNewReleases = async () => {
-        const response = await fetch("http://localhost:3000/token"); // Pega o token do backend
+        const response = await fetch(`${config.apiUrl}/token`); // Pega o token do backend
         const data = await response.json();
         const token = data.access_token;
 
@@ -47,7 +48,7 @@ const DisplayHome = () => {
     };
 
     const fetchRecommendations = async () => {
-        const response = await fetch("http://localhost:3000/token"); // Pega o token do backend
+        const response = await fetch(`${config.apiUrl}/token`); // Pega o token do backend
         const data = await response.json();
         const token = data.access_token;
 

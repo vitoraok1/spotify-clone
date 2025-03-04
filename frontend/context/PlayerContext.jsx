@@ -1,4 +1,5 @@
 import { createContext, useEffect, useRef, useState } from "react";
+import config from "../../config";
 
 export const PlayerContext = createContext();
 
@@ -36,7 +37,7 @@ const PlayerContextProvider = (props) => {
 
     const playWithName = async (artist, track) => {
         try {
-            const url = `http://localhost:3000/api/search?artist=${encodeURIComponent(artist)}&track=${encodeURIComponent(track)}`;
+            const url = `${config.apiUrl}/api/search?artist=${encodeURIComponent(artist)}&track=${encodeURIComponent(track)}`;
             const response = await fetch(url);
             const musicData = await response.json();
 

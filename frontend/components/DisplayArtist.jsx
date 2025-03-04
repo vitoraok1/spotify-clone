@@ -4,6 +4,7 @@ import Navbar from './Navbar';
 import { PlayerContext } from '../context/PlayerContext';
 import { SearchContext } from '../context/SearchContext';
 import { assets } from '../assets/assets';
+import config from '../../config';
 
 const DisplayArtist = () => {
     const location = useLocation();
@@ -42,7 +43,7 @@ const DisplayArtist = () => {
 
     const fetchArtistData = async () => {
         try {
-            const response = await fetch("http://localhost:3000/token");
+            const response = await fetch(`${config.apiUrl}/token`);
             const data = await response.json();
             const token = data.access_token;
             const artistId = artistData.id;
@@ -77,7 +78,7 @@ const DisplayArtist = () => {
     const fetchAlbumData = async (albumId) => {
 
         try {
-            const response = await fetch("http://localhost:3000/token");
+            const response = await fetch(`${config.apiUrl}/token`);
             const data = await response.json();
             const token = data.access_token;
 

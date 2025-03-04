@@ -1,7 +1,7 @@
-const API_URL = "https://spotify-clone-zwjk.onrender.com/token"; // Backend Express
+import config from "../config";
 
 export async function getSpotifyToken() {
-    const response = await fetch(API_URL);
+    const response = await fetch(`${config.apiUrl}/token`);
     const data = await response.json();
     return data.access_token;
 }
